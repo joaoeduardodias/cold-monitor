@@ -2,8 +2,7 @@
 
 import type React from "react"
 
-
-import { ChevronLeft, ChevronRight, RotateCcw, Save, Search, Settings, TrendingUp } from "lucide-react"
+import { ChevronLeft, ChevronRight, Printer, RotateCcw, Save, Search, Settings, TrendingUp } from "lucide-react"
 import { useEffect, useState } from "react"
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import { toast } from "sonner"
@@ -42,7 +41,12 @@ type ChartConfig = {
   maxValue: string
 }
 
-export function HistoryTable({ id }: { id: number }) {
+interface HistoryTableProps {
+  id: number
+  storageName: string
+}
+
+export function HistoryTable({ id, storageName }: HistoryTableProps) {
   const [readings, setReadings] = useState<Reading[]>([])
   const [chartData, setChartData] = useState<ChartData[]>([])
   const [page, setPage] = useState(1)
@@ -71,6 +75,8 @@ export function HistoryTable({ id }: { id: number }) {
 
   useEffect(() => {
     loadData()
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, page, startDate, endDate, chartInterval, tableInterval, chartConfig])
 
   const loadData = () => {
@@ -146,6 +152,61 @@ export function HistoryTable({ id }: { id: number }) {
     return data
   }
 
+  const handlePrint = () => {
+    // Criar estilos específicos para impressão
+    const printStyles = `
+      <style>
+        @media print {
+          body * { visibility: hidden; }
+          #history-print-area, #history-print-area * { visibility: visible; }
+          #history-print-area { 
+            position: absolute; 
+            left: 0; 
+            top: 0; 
+            width: 100%;
+          }
+          .no-print { display: none !important; }
+          table { 
+            width: 100%; 
+            border-collapse: collapse; 
+          }
+          th, td { 
+            border: 1px solid #000; 
+            padding: 8px; 
+            text-align: left; 
+          }
+          th { 
+            background-color: #f5f5f5; 
+            font-weight: bold; 
+          }
+          .print-header {
+            margin-bottom: 20px;
+            text-align: center;
+          }
+          .print-info {
+            margin-bottom: 15px;
+            font-size: 14px;
+          }
+        }
+      </style>
+    `
+
+    // Adicionar estilos ao head temporariamente
+    const styleElement = document.createElement("style")
+    styleElement.innerHTML = printStyles
+    document.head.appendChild(styleElement)
+
+    // Executar impressão
+    window.print()
+
+    // Remover estilos após impressão
+    setTimeout(() => {
+      document.head.removeChild(styleElement)
+    }, 1000)
+
+    toast.success("Preparando impressão do histórico")
+  }
+
   const handleChartConfigChange = (field: keyof ChartConfig, value: string) => {
     setChartConfig((prev) => ({
       ...prev,
@@ -199,7 +260,13 @@ export function HistoryTable({ id }: { id: number }) {
           }
 
           // Atualizar o campo editado
-          updated[editingCell.field as keyof Reading] = newValue as any
+          if (editingCell.field === "temperature") {
+            updated.temperature = newValue
+          } else if (editingCell.field === "pressure") {
+            updated.pressure = newValue
+          } else if (editingCell.field === "humidity") {
+            updated.humidity = newValue
+          }
           updated.edited = true
 
           return updated
@@ -278,6 +345,59 @@ export function HistoryTable({ id }: { id: number }) {
 
   return (
     <div className="space-y-6">
+      {/* Área de impressão */}
+      <div id="history-print-area" style={{ display: "none" }}>
+        <div className="print-header">
+          <h1>Histórico de Leituras - {storageName}</h1>
+          <p>Relatório gerado em: {new Date().toLocaleString()}</p>
+        </div>
+        <div className="print-info">
+          <p>
+            <strong>Período:</strong> {startDate} a {endDate}
+          </p>
+          <p>
+            <strong>Intervalo:</strong> {tableInterval} minutos
+          </p>
+          <p>
+            <strong>Total de registros:</strong> {filteredReadings.length}
+          </p>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Data/Hora</th>
+              <th>Temperatura (°C)</th>
+              <th>Pressão (kPa)</th>
+              <th>Umidade (%)</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredReadings.map((reading) => (
+              <tr key={reading.id}>
+                <td>{reading.timestamp}</td>
+                <td>{reading.temperature.toFixed(2)}</td>
+                <td>{reading.pressure.toFixed(2)}</td>
+                <td>{reading.humidity.toFixed(1)}</td>
+                <td>
+                  {reading.status === "normal" && "Normal"}
+                  {reading.status === "warning" && "Atenção"}
+                  {reading.status === "critical" && "Crítico"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Botão de Exportar/Imprimir */}
+      <div className="flex justify-end">
+        <Button onClick={handlePrint} variant="outline">
+          <Printer className="mr-2 h-4 w-4" />
+          Imprimir Histórico
+        </Button>
+      </div>
+
       {/* Configurações e Filtros */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-2">
@@ -354,7 +474,7 @@ export function HistoryTable({ id }: { id: number }) {
                 min="0.1"
                 max="10"
                 value={chartConfig.tempVariation}
-                onChange={(e) => handleChartConfigChange("tempVariation", e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChartConfigChange("tempVariation", e.target.value)}
               />
               <p className="text-xs text-muted-foreground">Multiplicador da variação</p>
             </div>
@@ -439,7 +559,7 @@ export function HistoryTable({ id }: { id: number }) {
                     stroke="#ef4444"
                     strokeWidth={2}
                     strokeDasharray="5 5"
-                    label={{ value: `Limite: ${chartConfig.limitValue}°C`, position: "topRight" }}
+                    label={{ value: `Limite: ${chartConfig.limitValue}°C`, position: "insideTopRight" }}
                   />
                 )}
 

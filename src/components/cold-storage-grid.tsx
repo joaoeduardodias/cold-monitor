@@ -3,7 +3,7 @@
 import { AlertTriangle, Clock, Fan, Power, GaugeIcon as PressureGauge, Snowflake, Thermometer } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useState } from "react"
-import { ModernGauge } from "./modern-gauge"
+import { Gauge } from "./gauge"
 import { Badge } from "./ui/badge"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./ui/card"
 
@@ -12,8 +12,10 @@ type OperationalStatus = "refrigerating" | "defrosting" | "idle" | "alarm" | "fa
 type ColdStorage = {
   id: number
   name: string
-  temperature: number
-  pressure: number
+  temperature?: number
+  pressure?: number
+  min: number
+  max: number
   status: "normal" | "warning" | "critical"
   operationalStatus: OperationalStatus
   lastUpdated: string
@@ -24,23 +26,25 @@ export function ColdStorageGrid() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Simulando dados em tempo real
+
     const mockData: ColdStorage[] = [
       {
         id: 1,
         name: "Câmara 01",
         temperature: -18.5,
-        pressure: 101.3,
         status: "normal",
+        min: -25,
+        max: -10,
         operationalStatus: "refrigerating",
         lastUpdated: new Date().toISOString(),
       },
       {
         id: 2,
         name: "Câmara 02",
-        temperature: -15.2,
         pressure: 100.8,
         status: "warning",
+        min: -25,
+        max: -10,
         operationalStatus: "defrosting",
         lastUpdated: new Date().toISOString(),
       },
@@ -48,7 +52,8 @@ export function ColdStorageGrid() {
         id: 3,
         name: "Câmara 03",
         temperature: -20.1,
-        pressure: 101.5,
+        min: -25,
+        max: -10,
         status: "normal",
         operationalStatus: "fan-only",
         lastUpdated: new Date().toISOString(),
@@ -56,8 +61,9 @@ export function ColdStorageGrid() {
       {
         id: 4,
         name: "Câmara 04",
-        temperature: -10.3,
         pressure: 99.7,
+        min: -25,
+        max: -10,
         status: "critical",
         operationalStatus: "alarm",
         lastUpdated: new Date().toISOString(),
@@ -66,8 +72,9 @@ export function ColdStorageGrid() {
         id: 5,
         name: "Câmara 05",
         temperature: -19.2,
-        pressure: 101.2,
         status: "normal",
+        min: -25,
+        max: -10,
         operationalStatus: "idle",
         lastUpdated: new Date().toISOString(),
       },
@@ -75,8 +82,9 @@ export function ColdStorageGrid() {
         id: 6,
         name: "Câmara 06",
         temperature: -17.8,
-        pressure: 100.9,
         status: "normal",
+        min: -25,
+        max: -10,
         operationalStatus: "off",
         lastUpdated: new Date().toISOString(),
       },
@@ -99,8 +107,12 @@ export function ColdStorageGrid() {
 
           return {
             ...storage,
-            temperature: storage.temperature + (Math.random() * 0.6 - 0.3),
-            pressure: storage.pressure + (Math.random() * 0.2 - 0.1),
+            ...(storage.temperature && {
+              temperature: storage.temperature + (Math.random() * 0.6 - 0.3),
+            }),
+            ...(storage.pressure && {
+              pressure: storage.pressure + (Math.random() * 0.2 - 0.1),
+            }),
             lastUpdated: new Date().toISOString(),
             status: Math.random() > 0.8 ? (Math.random() > 0.5 ? "warning" : "critical") : "normal",
             operationalStatus: newOperationalStatus,
@@ -112,18 +124,18 @@ export function ColdStorageGrid() {
     return () => clearInterval(interval)
   }, [])
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "normal":
-        return "bg-green-500"
-      case "warning":
-        return "bg-yellow-500"
-      case "critical":
-        return "bg-red-500"
-      default:
-        return "bg-gray-500"
-    }
-  }
+  // const getStatusColor = (status: string) => {
+  //   switch (status) {
+  //     case "normal":
+  //       return "bg-green-500"
+  //     case "warning":
+  //       return "bg-yellow-500"
+  //     case "critical":
+  //       return "bg-red-500"
+  //     default:
+  //       return "bg-gray-500"
+  //   }
+  // }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -195,49 +207,74 @@ export function ColdStorageGrid() {
   }
 
   return (
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 min-w-72">
       {storages.map((storage) => (
         <Link href={`/storage/${storage.id}`} key={storage.id} className="block">
-          <Card className="h-full transition-all hover:shadow-lg hover:scale-[1.02] border-0 shadow-md">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
+          <Card className="h-full transition-all hover:shadow-lg hover:scale-[1.02] border-0 shadow-md border-t">
+            <CardHeader>
+              <div className="flex flex-col items-start gap-2">
                 <div className="flex items-center gap-2">
                   <CardTitle className="text-lg font-semibold">{storage.name}</CardTitle>
-                  {getOperationalStatusBadge(storage.operationalStatus)}
                 </div>
-                <div className={`h-3 w-3 rounded-full ${getStatusColor(storage.status)}`} />
+                <div className="w-full flex items-center justify-between">
+                  {getOperationalStatusBadge(storage.operationalStatus)}
+                  {storage.status !== "normal" && <div>{getStatusBadge(storage.status)}</div>}
+                </div>
               </div>
             </CardHeader>
             <CardContent className="pb-4">
-              {/* Informações de Temperatura e Pressão */}
               <div className="mb-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Thermometer className="h-5 w-5 text-blue-600" />
-                    <span className="text-sm text-muted-foreground">Temperatura</span>
+                {storage.temperature && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center ">
+                      <Thermometer className="h-5 w-5 text-blue-600" />
+                      <span className="text-base text-muted-foreground">Temperatura</span>
+                    </div>
+                    <span className="text-lg font-medium">{storage.temperature.toFixed(1)}°C</span>
                   </div>
-                  <span className="text-lg font-medium">{storage.temperature.toFixed(1)}°C</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <PressureGauge className="h-5 w-5 text-blue-600" />
-                    <span className="text-sm text-muted-foreground">Pressão</span>
+                )}
+
+
+
+                {storage.pressure && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <PressureGauge className="h-5 w-5 text-blue-600" />
+                      <span className="text-base text-muted-foreground">Pressão</span>
+                    </div>
+                    <span className="text-lg font-medium">{storage.pressure.toFixed(1)} Bar</span>
                   </div>
-                  <span className="text-lg font-medium">{storage.pressure.toFixed(1)} kPa</span>
-                </div>
+                )}
+
               </div>
 
-              {/* Gráfico Moderno */}
               <div className="flex justify-center">
-                <ModernGauge value={storage.temperature} min={-25} max={-10} status={storage.status} size={100} />
+                {storage.temperature && (
+                  <Gauge value={storage.temperature} min={-25} max={-10} status={storage.status} size={100} />
+                )}
+                {storage.pressure && (
+                  <Gauge value={storage.pressure} min={-25} max={-10} status={storage.status} size={100} />
+                )}
               </div>
             </CardContent>
-            <CardFooter className="flex items-center justify-between border-t pt-4">
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Clock className="h-3 w-3" />
-                <span>{new Date(storage.lastUpdated).toLocaleTimeString()}</span>
+            <CardFooter className="border-t pt-4 grid grid-cols-4 gap-2 w-full text-xs">
+              <div className="text-center">
+                <div className="text-muted-foreground">Mín</div>
+                <div className="font-medium text-blue-600">{storage.min}°C</div>
               </div>
-              {storage.status !== "normal" && <div>{getStatusBadge(storage.status)}</div>}
+              <div className="text-center">
+                <div className="text-muted-foreground">Setpoint</div>
+                <div className="font-medium text-green-600">12 °C</div>
+              </div>
+              <div className="text-center">
+                <div className="text-muted-foreground">Dif</div>
+                <div className="font-medium text-purple-600">0.5 °C</div>
+              </div>
+              <div className="text-center">
+                <div className="text-muted-foreground">Máx</div>
+                <div className="font-medium text-red-600">{storage.max}°C</div>
+              </div>
+
             </CardFooter>
           </Card>
         </Link>

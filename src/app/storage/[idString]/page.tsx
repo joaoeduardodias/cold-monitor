@@ -1,3 +1,5 @@
+import Link from "next/link"
+
 import { AlertSettings } from "@/src/components/alert-settings"
 import { HistoryTable } from "@/src/components/history-table"
 import { RealtimeGauges } from "@/src/components/realtime-gauges"
@@ -10,24 +12,28 @@ import {
   ArrowLeft,
   Bell,
   Clock,
-  Download,
   Fan,
   History,
   Power,
-  GaugeIcon as PressureGauge,
   Snowflake,
-  Thermometer,
+  Thermometer
 } from "lucide-react"
-import Link from "next/link"
 import { notFound } from "next/navigation"
+
 
 type OperationalStatus = "refrigerating" | "defrosting" | "idle" | "alarm" | "fan-only" | "off"
 
-export default function StoragePage({ params }: { params: { id: string } }) {
-  const id = Number.parseInt(params.id)
+export default async function StoragePage({
+  params,
+}: {
+  params: Promise<{ idString: string }>
+}) {
+  const { idString } = await params
+  const id = Number.parseInt(idString)
+  if (isNaN(id) || id < 1 || id > 6) {
+    notFound()
+  }
 
-  // Em um app real, buscaríamos os dados do servidor
-  // Aqui estamos simulando dados estáticos
   const storage = {
     id,
     name: `Câmara 0${id}`,
@@ -46,9 +52,7 @@ export default function StoragePage({ params }: { params: { id: string } }) {
     operationalStatus: ["refrigerating", "defrosting", "idle", "alarm", "fan-only", "off"][id % 6] as OperationalStatus,
   }
 
-  if (isNaN(id) || id < 1 || id > 6) {
-    notFound()
-  }
+
 
   const getOperationalStatusBadge = (status: OperationalStatus) => {
     switch (status) {
@@ -116,80 +120,57 @@ export default function StoragePage({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="mb-6">
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Temperatura</CardTitle>
-            <CardDescription>Atual e limites</CardDescription>
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2">
+              <Thermometer className="h-6 w-6 text-blue-600" />
+              Temperatura
+            </CardTitle>
+            <CardDescription>Monitoramento principal da câmara fria</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-2">
-              <Thermometer className="h-5 w-5 text-blue-600" />
-              <span className="text-3xl font-bold">{storage.temperature.toFixed(1)}°C</span>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Thermometer className="h-5 w-5 text-blue-600" />
+                <span className="text-sm text-muted-foreground">Temperatura Atual</span>
+              </div>
+              <span className="text-4xl font-bold">{storage.temperature.toFixed(1)}°C</span>
             </div>
-            <div className="mt-2 text-sm text-muted-foreground">
-              <div>Mínimo: {storage.minTemp}°C</div>
-              <div>Máximo: {storage.maxTemp}°C</div>
+
+            <div className="grid gap-4 md:grid-cols-3 text-sm text-muted-foreground">
+              <div>
+                <span className="font-medium">Setpoint:</span>
+                <div className="text-lg font-semibold text-foreground">{storage.setpoint}°C</div>
+              </div>
+              <div>
+                <span className="font-medium">Faixa Operacional:</span>
+                <div className="text-lg font-semibold text-foreground">
+                  {storage.minTemp}°C a {storage.maxTemp}°C
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Pressão</CardTitle>
-            <CardDescription>Atual e limites</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <PressureGauge className="h-5 w-5 text-blue-600" />
-              <span className="text-3xl font-bold">{storage.pressure.toFixed(1)} kPa</span>
-            </div>
-            <div className="mt-2 text-sm text-muted-foreground">
-              <div>Mínimo: {storage.minPressure} kPa</div>
-              <div>Máximo: {storage.maxPressure} kPa</div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Umidade</CardTitle>
-            <CardDescription>Atual</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <PressureGauge className="h-5 w-5 text-blue-600" />
-              <span className="text-3xl font-bold">{storage.humidity}%</span>
-            </div>
-            <div className="mt-2 text-sm text-muted-foreground">
-              <div>Última atualização: {new Date(storage.lastUpdated).toLocaleTimeString()}</div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       <div className="mt-6">
         <Tabs defaultValue="realtime">
-          <div className="flex items-center justify-between">
-            <TabsList>
-              <TabsTrigger value="realtime" className="flex items-center gap-2">
-                <Thermometer className="h-4 w-4" />
-                Tempo Real
-              </TabsTrigger>
-              <TabsTrigger value="history" className="flex items-center gap-2">
-                <History className="h-4 w-4" />
-                Histórico
-              </TabsTrigger>
-              <TabsTrigger value="alerts" className="flex items-center gap-2">
-                <Bell className="h-4 w-4" />
-                Alertas
-              </TabsTrigger>
-            </TabsList>
-            <Button variant="outline" size="sm">
-              <Download className="mr-2 h-4 w-4" />
-              Exportar Dados
-            </Button>
-          </div>
+          <TabsList>
+            <TabsTrigger value="realtime" className="flex items-center gap-2">
+              <Thermometer className="h-4 w-4" />
+              Tempo Real
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex items-center gap-2">
+              <History className="h-4 w-4" />
+              Histórico
+            </TabsTrigger>
+            <TabsTrigger value="alerts" className="flex items-center gap-2">
+              <Bell className="h-4 w-4" />
+              Alertas
+            </TabsTrigger>
+          </TabsList>
           <TabsContent value="realtime" className="mt-4">
             <Card>
               <CardHeader>
@@ -215,7 +196,7 @@ export default function StoragePage({ params }: { params: { id: string } }) {
                 <CardDescription>Últimas 100 leituras</CardDescription>
               </CardHeader>
               <CardContent>
-                <HistoryTable id={id} />
+                <HistoryTable storageName={storage.name} id={id} />
               </CardContent>
             </Card>
           </TabsContent>

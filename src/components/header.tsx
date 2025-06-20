@@ -1,8 +1,13 @@
+"use client"
 import { Gauge, Plus, RefreshCw, Settings } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Button } from "./ui/button";
 
 
 export function Header() {
+  const router = useRouter()
+
+
   return (
 
     <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
@@ -16,7 +21,7 @@ export function Header() {
             <RefreshCw className="mr-2 h-4 w-4" />
             Atualizar
           </Button>
-          <Button variant="outline" size="sm">
+          <Button onClick={() => router.push("/settings")} variant="outline" size="sm">
             <Settings className="mr-2 h-4 w-4" />
             Configurações
           </Button>

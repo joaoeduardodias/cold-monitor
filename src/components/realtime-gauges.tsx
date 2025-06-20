@@ -1,10 +1,10 @@
 "use client"
 
-
 import { AlertTriangle, Clock, Fan, Power, Snowflake, Thermometer, Wifi, WifiOff } from "lucide-react"
 import { useEffect, useState } from "react"
 import { ChamberControls } from "./chamber-controls"
-import { ModernGauge } from "./modern-gauge"
+
+import { Gauge } from "./gauge"
 import { Badge } from "./ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 
@@ -166,9 +166,8 @@ export function RealtimeGauges({
         </div>
       </div>
 
-      {/* Layout Principal: Gauge + Controles */}
+
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Seção de Monitoramento */}
         <div className="space-y-6">
           <Card className={`transition-all duration-300 ${isUpdating ? "ring-2 ring-blue-200" : ""}`}>
             <CardHeader className="pb-4">
@@ -181,7 +180,7 @@ export function RealtimeGauges({
               </div>
             </CardHeader>
             <CardContent className="flex justify-center">
-              <ModernGauge
+              <Gauge
                 value={data.temperature}
                 min={-25}
                 max={-10}
@@ -191,7 +190,6 @@ export function RealtimeGauges({
             </CardContent>
           </Card>
 
-          {/* Valores Adicionais */}
           <div className="grid gap-4 sm:grid-cols-2">
             <Card>
               <CardContent className="pt-6">
@@ -213,7 +211,6 @@ export function RealtimeGauges({
           </div>
         </div>
 
-        {/* Seção de Controles */}
         <div>
           <Card className="h-full">
             <CardHeader className="pb-4">

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 
-interface ModernGaugeProps {
+interface GaugeProps {
   value: number
   min: number
   max: number
@@ -10,7 +10,7 @@ interface ModernGaugeProps {
   size?: number
 }
 
-export function ModernGauge({ value, min, max, status, size = 120 }: ModernGaugeProps) {
+export function Gauge({ value, min, max, status, size = 120 }: GaugeProps) {
   const [animatedValue, setAnimatedValue] = useState(min)
   const [isAnimating, setIsAnimating] = useState(false)
 
@@ -68,22 +68,18 @@ export function ModernGauge({ value, min, max, status, size = 120 }: ModernGauge
   const centerX = size / 2
   const centerY = size / 2
   const strokeWidth = 8
-
-  // Calcular a circunferência para o stroke-dasharray
   const circumference = 2 * Math.PI * radius
   const strokeDasharray = circumference
   const strokeDashoffset = circumference - (percentage / 100) * circumference
 
   return (
     <div className="relative" style={{ width: size, height: size }}>
-      {/* Background circle */}
       <svg
         width={size}
         height={size}
         className="transform -rotate-90"
         style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.1))" }}
       >
-        {/* Background track */}
         <circle
           cx={centerX}
           cy={centerY}
@@ -93,8 +89,6 @@ export function ModernGauge({ value, min, max, status, size = 120 }: ModernGauge
           strokeWidth={strokeWidth}
           className="opacity-30"
         />
-
-        {/* Progress circle */}
         <circle
           cx={centerX}
           cy={centerY}
@@ -112,7 +106,6 @@ export function ModernGauge({ value, min, max, status, size = 120 }: ModernGauge
         />
       </svg>
 
-      {/* Center content */}
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="text-center">
           <div
@@ -124,12 +117,6 @@ export function ModernGauge({ value, min, max, status, size = 120 }: ModernGauge
           <div className="text-xs text-muted-foreground font-medium">°C</div>
         </div>
       </div>
-
-      {/* Status indicator dot */}
-      <div
-        className={`absolute top-2 right-2 w-3 h-3 rounded-full ${isAnimating ? "animate-pulse" : ""}`}
-        style={{ backgroundColor: colors.primary }}
-      />
     </div>
   )
 }
